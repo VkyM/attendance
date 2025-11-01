@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+  <style>
+    body { font-family: Arial; background: #f7f7f7; padding: 20px; }
+    h2 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    input, button { margin: 5px; padding: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Welcome, <span id="user"></span></h2>
+
+  <h3>Apply Leave</h3>
+  <input type="date" id="leaveDate">
+  <input type="text" id="reason" placeholder="Reason">
+  <button onclick="applyLeave()">Apply</button>
+  <p id="msg"></p>
+
+  <h3>Attendance</h3>
+  <table id="attTable">
+    <tr><th>Date</th><th>Login Time</th></tr>
+  </table>
+
+  <h3>Leaves</h3>
+  <table id="leaveTable">
+    <tr><th>Date</th><th>Reason</th><th>Status</th></tr>
+  </table>
+
+  <script>
+    const username = localStorage.getItem("username");
+    document.getElementById("user").innerText = username;
+
+    async function loadProfile() {
+      const res = await fetch(`/profile/${username}`);
+      const data = await res.json();
+
+      // Attendance
+      const attTable = document.getElementById("attTable");
+      data.attendance.forEach(a => {
+        attTable.innerHTML += `<tr><td>${a.date}</td><td>${a.loginTime}</td></tr>`;
+      });
+
+      // Leaves
+      const leaveTable = document.getElementById("leaveTable");
+      data.leaves.forEach(l => {
+        leaveTable.innerHTML += `<tr><td>${l.date}</td><td>${l.reason}</td><td>${l.status}</td></tr>`;
+      });
+    }
+
+    async function applyLeave() {
+      const date = document.getElementById("leaveDate").value;
+      const reason = document.getElementById("reason").value;
+      const res = await fetch("/leave", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, date, reason })
+      });
+      const data = await res.json();
+      document.getElementById("msg").innerText = data.message;
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

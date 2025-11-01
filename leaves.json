@@ -1,0 +1,23 @@
+[
+  {
+    "username": "vignesh",
+    "date": "2025-10-22",
+    "reason": "sick",
+    "status": "Approved",
+    "appliedOn": "2025-10-29T08:58:06.089Z"
+  },
+  {
+    "username": "ebi",
+    "date": "2025-09-17",
+    "reason": "work from home",
+    "status": "Pending",
+    "appliedOn": "2025-10-29T09:37:17.823Z"
+  },
+  {
+    "username": "vijay@chainscript.dev",
+    "date": "2024-10-03",
+    "reason": "Testing",
+    "status": "Approved",
+    "appliedOn": "2025-10-30T03:31:03.222Z"
+  }
+]

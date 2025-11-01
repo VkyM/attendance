@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: Arial; background: #f7f7f7; padding: 20px; }
+    input, button { margin: 5px; padding: 8px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    .late { background: #ffcccc; }
+    .filters { margin-bottom: 10px; }
+    .userlist { margin-top: 10px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 0 4px #ccc; display: none; }
+  </style>
+</head>
+<body>
+  <h2>Admin Dashboard</h2>
+
+  <div class="filters">
+    <label><input type="month" id="month"></label><br>
+    <label><input type="radio" name="viewType" value="late" checked> Late Comers</label>
+    <label><input type="radio" name="viewType" value="all"> All</label><br>
+    <div id="userList" class="userlist"></div>
+    <button onclick="loadAttendance()">Load Attendance</button>
+  </div>
+
+  <h3>Monthly Attendance</h3>
+  <table id="attTable">
+    <tr><th>Username</th><th>Date</th><th>Login Time</th><th>Status</th></tr>
+  </table>
+
+  <h3>Leave Requests</h3>
+  <table id="leaveTable">
+    <tr><th>Username</th><th>Date</th><th>Reason</th><th>Status</th><th>Action</th></tr>
+  </table>
+
+  <script>
+    // --- When radio changes, toggle user list ---
+    document.querySelectorAll('input[name="viewType"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const userListDiv = document.getElementById("userList");
+        if (radio.value === "all") {
+          userListDiv.style.display = "block";
+          loadUserList();
+        } else {
+          userListDiv.style.display = "none";
+        }
+      });
+    });
+
+    async function loadUserList() {
+      const res = await fetch("/users.json");
+      const users = await res.json();
+      const div = document.getElementById("userList");
+      div.innerHTML = "<b>Select Users:</b><br>";
+      users.forEach(u => {
+        if (u.username !== "admin") {
+          div.innerHTML += `
+            <label><input type="checkbox" name="userSel" value="${u.username}"> ${u.username}</label><br>
+          `;
+        }
+      });
+    }
+
+    async function loadAttendance() {
+      const month = document.getElementById("month").value;
+      const res = await fetch(`/admin/attendance/${month}`);
+      const data = await res.json();
+      const viewType = document.querySelector('input[name="viewType"]:checked').value;
+      const attTable = document.getElementById("attTable");
+      attTable.innerHTML = `<tr><th>Username</th><th>Date</th><th>Login Time</th><th>Status</th></tr>`;
+
+      let filtered = data;
+      if (viewType === "late") {
+        filtered = data.filter(a => a.late);
+      } else {
+        const selectedUsers = Array.from(document.querySelectorAll("input[name='userSel']:checked")).map(c => c.value);
+        if (selectedUsers.length > 0) {
+          filtered = data.filter(a => selectedUsers.includes(a.username));
+        }
+      }
+
+      filtered.forEach(a => {
+        attTable.innerHTML += `
+          <tr class="${a.late ? 'late' : ''}">
+            <td>${a.username}</td>
+            <td>${a.date}</td>
+            <td>${a.loginTime}</td>
+            <td>${a.late ? 'Late' : 'On Time'}</td>
+          </tr>`;
+      });
+    }
+
+    async function loadLeaves() {
+      const res = await fetch("/admin/leaves");
+      const data = await res.json();
+      const table = document.getElementById("leaveTable");
+      table.innerHTML = `<tr><th>Username</th><th>Date</th><th>Reason</th><th>Status</th><th>Action</th></tr>`;
+      data.forEach(l => {
+        table.innerHTML += `<tr>
+          <td>${l.username}</td>
+          <td>${l.date}</td>
+          <td>${l.reason}</td>
+          <td>${l.status}</td>
+          <td>
+            <button onclick="updateLeave('${l.username}','${l.date}','Approved')">Approve</button>
+            <button onclick="updateLeave('${l.username}','${l.date}','Rejected')">Reject</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    async function updateLeave(username, date, status) {
+      await fetch("/admin/leave/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, date, status })
+      });
+      loadLeaves();
+    }
+
+    loadLeaves();
+  </script>
+</body>
+</html>
